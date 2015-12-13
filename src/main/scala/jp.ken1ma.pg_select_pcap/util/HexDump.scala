@@ -7,33 +7,38 @@ object HexDump {
 
 		var i = 0
 		data.foreach { bt =>
+			// line header
 			if (i % 16 == 0)
 				sb ++= f"$i%04x  "
 			else
 				sb += ' '
 
+			// byte value
 			sb ++= f"$bt%02x"
 
+			// line footer
 			if (i % 16 == 15) {
 				sb ++= "  "
 				for (j <- i - 15 to i)
-					sb += (if (data(j) >= 0x20 && data(j) <= 0x7e) data(j).toChar else '.')
+					sb += toChar(data(j))
 				sb += '\n'
 			}
 
 			i += 1
 		}
 
-
+		// line footer of the last line
 		if (data.size % 16 > 0) {
 			for (j <- data.size % 16 until 16)
 				sb ++= "   "
 			sb ++= "  "
 			for (j <- data.size / 16 * 16 until data.size)
-				sb += (if (data(j) >= 0x20 && data(j) <= 0x7e) data(j).toChar else '.')
+				sb += toChar(data(j))
 			sb += '\n'
 		}
 
 		sb.toString
 	}
+
+	def toChar(bt: Byte) = if (bt >= 0x20 && bt <= 0x7e) bt.toChar else '.'
 }
