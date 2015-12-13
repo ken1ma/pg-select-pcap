@@ -24,7 +24,7 @@ object Main extends App {
 	val serverAddr = InetAddress.getByName(args(1))
 
 	val snapLen = 65536
-	val readTimeout = 0 // infinite
+	val readTimeout = 10 // ms
 
 	val encoding = "UTF-8"
 
