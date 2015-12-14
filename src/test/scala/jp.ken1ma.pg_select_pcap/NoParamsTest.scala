@@ -56,8 +56,11 @@ class NoParamsTest extends FunSuite {
 */
 
 	test("PreparedStatement.executeQuery with parameters") {
-		val ps = con.prepareStatement("select * from T0 where name = ?")
-		ps.setString(1, "foo")
+		val ps = con.prepareStatement("select * from T0 where (id = ? or id = ?) and (name = ? or name = ?)")
+		ps.setInt(1, 3)
+		ps.setInt(2, 1025)
+		ps.setString(3, "foo")
+		ps.setString(4, "bar")
 		try {
 			ps.executeQuery
 		} finally {
