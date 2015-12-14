@@ -60,7 +60,6 @@ object Main extends App {
 										// v3 (org.postgresql.core.v3.QueryExecutorImpl.sendParse)
 										if (data(0) == 'P') {
 											var i = 1
-											log.debug("v3 query")
 
 											// messageSize
 											val messageSize = data(i) << 24 | data(i + 1) << 16 | data(i + 2) << 8 | data(i + 3)
@@ -79,7 +78,7 @@ object Main extends App {
 											i += 1
 											val queryEnd = i
 											val query = new String(data, queryStart, queryEnd - queryStart, "UTF-8")
-											log.info(s"query = $query")
+											log.info(s"query (v3) = $query")
 
 											// get number of parameters
 											val numParams = data(i) << 8 | data(i + 1)
@@ -174,11 +173,12 @@ object Main extends App {
 											}
 
 										// v2 (org.postgresql.core.v2.QueryExecutorImpl.sendQuery)
+										// org.postgresql.core.v3.QueryExecutorImpl.startCopy
 										} else if (data(0) == 'Q') {
 											val dataLen = data(1) << 24 | data(2) << 16 | data(3) << 8 | data(4)
 											val queryLen = dataLen - 4 - 1 // exclude the dataLen and null char at the last
 											val query = new String(data, 5, queryLen, encoding)
-											log.warn(s"v2 query = $query")
+											log.warn(s"query (v2) = $query")
 										}
 									}
 
