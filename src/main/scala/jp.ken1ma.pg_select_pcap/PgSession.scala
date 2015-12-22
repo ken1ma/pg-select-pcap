@@ -5,6 +5,8 @@ import java.net.InetAddress
 
 /** Holds state of a session */
 class PgSession(key: PgSession.Key) {
+	import PgMessage.toInt4
+
 	/*
 		Unless we can capture the startup message in a session,
 		we cannot determine the message boundaries reliably.
@@ -29,7 +31,7 @@ class PgSession(key: PgSession.Key) {
 		if (guessMessageBoundaries) {
 			// see if it is a startup message
 			if (buf.size >= 4) {
-				val size = buf(0) << 24 | buf(1) << 16 | buf(2) << 8 | buf(3)
+				val size = toInt4(buf(0), buf(1), buf(2), buf(3))
 				if (size == buf.size) {
 					messages += new PgMessage('?', size, buf.slice(4, size))
 					buf.clear
@@ -41,7 +43,7 @@ class PgSession(key: PgSession.Key) {
 			if (guessMessageBoundaries) {
 				if (buf.size >= 5) {
 					val typ = buf(0).toChar
-					val size = buf(1) << 24 | buf(2) << 16 | buf(3) << 8 | buf(4)
+					val size = toInt4(buf(1), buf(2), buf(3), buf(4))
 					if (1 + size == buf.size) {
 						messages += new PgMessage(typ, size, buf.slice(1 + 4, 1 + size))
 						buf.remove(0, 1 + size)
@@ -58,9 +60,9 @@ class PgSession(key: PgSession.Key) {
 		// TODO: remove a session at session close
 
 		if (!guessMessageBoundaries) {
-			while (buf.size >= 5 && 1 + (buf(1) << 24 | buf(2) << 16 | buf(3) << 8 | buf(4)) <= buf.size) {
+			while (buf.size >= 5 && 1 + toInt4(buf(1), buf(2), buf(3), buf(4)) <= buf.size) {
 				val typ = buf(0).toChar
-				val size = buf(1) << 24 | buf(2) << 16 | buf(3) << 8 | buf(4)
+				val size = toInt4(buf(1), buf(2), buf(3), buf(4))
 
 				if (buf.size >= 1 + size) { // size is the length of a message except the first byte
 					messages += new PgMessage(typ, size, buf.slice(1 + 4, 1 + size))
@@ -93,22 +95,24 @@ class PgMessage(
 		val typ: Char, // first byte identifies the type
 		val size: Long, // next four bytes specify the length (excluding the first byte)
 		val data: Seq[Byte]) {
+	import PgMessage._
+
 	var offset = 0
 
 	def nextInt1 = {
-		val value = data(offset) & 0xff
+		val value = toInt1(data(offset))
 		offset += 1
 		value
 	}
 
 	def nextInt2 = {
-		val value = data(offset) << 8 | data(offset + 1)
+		val value = toInt2(data(offset), data(offset + 1))
 		offset += 2
 		value
 	}
 
 	def nextInt4 = {
-		val value = data(offset) << 24 | data(offset + 1) << 16 | data(offset + 2) << 8 | data(offset + 3)
+		val value = toInt4(data(offset), data(offset + 1), data(offset + 2), data(offset + 3))
 		offset += 4
 		value
 	}
@@ -129,6 +133,12 @@ class PgMessage(
 	}
 
 	def nextUtf8StringUntilZero = new String(nextBytesUntilZero.toArray, "UTF-8")
+}
+
+object PgMessage {
+	def toInt1(b0: Byte) = b0 & 0xff
+	def toInt2(b0: Byte, b1: Byte) = (b0 & 0xff) << 8 | (b1 & 0xff)
+	def toInt4(b0: Byte, b1: Byte, b2: Byte, b3: Byte) = (b0 & 0xff) << 24 | (b1 & 0xff) << 16 | (b2 & 0xff) << 8 | (b3 & 0xff)
 }
 
 case class PgParse(
